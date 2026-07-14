@@ -12,16 +12,31 @@ pipeline{
         stage("build jar") {
             steps {
                 script {
+                    // Run the shared-library step that builds the project
                     buildJar()
+
+                    // Ensure the build produced a JAR and archive it for later stages
+                    def jars = findFiles(glob: 'target/*.jar')
+                    if (jars == null || jars.length == 0) {
+                        error "No JAR found in target/*.jar after buildJar()"
+                    }
+                    archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
                 }
             }
         }
         stage("build and push image") {
             steps {
                 script {
-                    buildImage 'ada045/java-app:1.0'
+                    // Verify the built artifact exists in the workspace before building image
+                    def jars = findFiles(glob: 'target/*.jar')
+                    if (jars == null || jars.length == 0) {
+                        error "No JAR found in target/*.jar; ensure buildJar() produced the artifact before building the image."
+                    }
+
+                    def imageName = 'ada045/java-app:1.0'
+                    buildImage imageName
                     dockerLogin()
-                    dockerPush 'ada045/java-app:1.0'
+                    dockerPush imageName
                 }
             }
         }
