@@ -6,6 +6,7 @@ library identifier: 'jenkins-shared-library@main', retriever: modernSCM(
      credentialsId: 'git-credentials'
     ]
 )
+echo "Library loaded successfully"
 def gv
 
 pipeline{
