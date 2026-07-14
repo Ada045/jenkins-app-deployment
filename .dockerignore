@@ -1,0 +1,18 @@
+**
+
+# Keep jars in target directory (assumes CI produces target/*.jar)
+!target/
+target/*
+!target/*.jar
+
+# Common files and folders that should not be sent to the Docker daemon
+.git
+.gitignore
+src
+.mvn
+.idea
+.vscode
+*.iml
+mvnw
+mvnw.cmd
+README.md
