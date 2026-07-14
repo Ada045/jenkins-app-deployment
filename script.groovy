@@ -1,6 +1,6 @@
 #!/usr/bin/env groovy
 
 def deploy() {
-  echo 'Deploying....'
+    echo 'deploying application...'
 }
 return this
