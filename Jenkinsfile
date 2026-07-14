@@ -9,13 +9,6 @@ pipeline{
         maven 'maven'
     }
     stages {
-        stage("init") {
-            steps {
-                script {
-                    gv = load "script.groovy"
-                }
-            }
-        }
         stage("build jar") {
             steps {
                 script {
@@ -35,7 +28,13 @@ pipeline{
         stage("deploy") {
             steps {
                 script {
-                    gv.deploy()
+                    // Load and invoke inside the same stage to avoid CPS/serialization
+                    // issues that can make the loaded script object null across stages.
+                    def gvLocal = load 'script.groovy'
+                    if (gvLocal == null) {
+                        error "Failed to load script.groovy: returned null"
+                    }
+                    gvLocal.deploy()
                 }
             }
         }
