@@ -44,11 +44,12 @@ pipeline{
                         error "No JAR found in target/*.jar; ensure buildJar() produced the artifact before building the image."
                     }
 
-                    def imageName = "ada045/java-app:${env.IMAGE_NAME}"
                     if (!env.IMAGE_NAME) {
                         error "IMAGE_NAME is not set; check version increment stage."
                     }
-                    buildImage imageName
+                    def imageName = "ada045/java-app:${env.IMAGE_NAME}"
+                    echo "Resolved Docker image name: ${imageName}"
+                    sh "docker build -t '${imageName}' ."
                     dockerLogin()
                     dockerPush imageName
                 }
