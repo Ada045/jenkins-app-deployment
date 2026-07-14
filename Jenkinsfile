@@ -47,9 +47,10 @@ pipeline{
                     if (!env.IMAGE_NAME) {
                         error "IMAGE_NAME is not set; check version increment stage."
                     }
+                    echo "env.IMAGE_NAME raw: '${env.IMAGE_NAME}'"
                     def imageName = "ada045/java-app:${env.IMAGE_NAME}"
                     echo "Resolved Docker image name: ${imageName}"
-                    sh "docker build -t '${imageName}' ."
+                    sh "docker build -t ${imageName} ."
                     dockerLogin()
                     dockerPush imageName
                 }
