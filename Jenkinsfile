@@ -22,15 +22,7 @@ pipeline{
         stage("build jar") {
             steps {
                 script {
-                    // Run the shared-library step that builds the project
                     buildJar()
-
-                    // Ensure the build produced a JAR and archive it for later stages
-                    def jars = findFiles(glob: 'target/*.jar')
-                    if (jars == null || jars.length == 0) {
-                        error "No JAR found in target/*.jar after buildJar()"
-                    }
-                    archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
                 }
             }
         }
@@ -47,13 +39,27 @@ pipeline{
         stage("deploy") {
             steps {
                 script {
-                    // Load and invoke inside the same stage to avoid CPS/serialization
-                    // issues that can make the loaded script object null across stages.
                     def gvLocal = load 'script.groovy'
-                    if (gvLocal == null) {
-                        error "Failed to load script.groovy: returned null"
-                    }
                     gvLocal.deploy()
+                }
+            }
+        }
+        stage("commit version update") {
+            steps {
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'git-credentials', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
+                        sh 'git config --global user.email "jenkins@example.com"'
+                        sh 'git config --global user.name "jenkins"'
+                        
+                        sh 'git status'
+                        sh 'git branch'
+                        sh 'git config --list'
+
+                        sh 'git remote set-url origin https://${USER}:${PASS}@github.com/Ada045/jenkins-app-deployment.git'
+                        sh 'git add .'
+                        sh 'git commit -m "ci: version bumb"'
+                        sh 'git push origin HEAD:master'
+                    }
                 }
             }
         }
