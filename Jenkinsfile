@@ -38,7 +38,7 @@ pipeline{
             steps {
                 script {
                     def imageName = "ada045/java-app:${env.IMAGE_NAME}"
-                    dockerImage imageName
+                    BuildImage imageName
                     dockerLogin()
                     dockerPush imageName
                 }
