@@ -47,17 +47,12 @@ pipeline{
         stage("commit version update") {
             steps {
                 script {
-                    withCredentials([usernamePassword(credentialsId: 'git-credentials', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
+                    withCredentials([usernamePassword(credentialsId: 'github-pat', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
                         sh 'git config --global user.email "jenkins@example.com"'
                         sh 'git config --global user.name "jenkins"'
-                        
-                        sh 'git status'
-                        sh 'git branch'
-                        sh 'git config --list'
-
                         sh 'git remote set-url origin https://${USER}:${PASS}@github.com/Ada045/jenkins-app-deployment.git'
                         sh 'git add .'
-                        sh 'git commit -m "ci: version bumb"'
+                        sh 'git commit -m "ci: version bump"'
                         sh 'git push origin HEAD:master'
                     }
                 }
