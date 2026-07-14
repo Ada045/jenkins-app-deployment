@@ -1,7 +1,6 @@
 #!/usr/bin/env groovy
 
-@Library ('jenkins-shared-library')
-def gv
+@Library('jenkins-shared-library') _
 
 pipeline{
     agent any
@@ -38,19 +37,8 @@ pipeline{
         stage("build and push image") {
             steps {
                 script {
-                    // Verify the built artifact exists in the workspace before building image
-                    def jars = findFiles(glob: 'target/*.jar')
-                    if (jars == null || jars.length == 0) {
-                        error "No JAR found in target/*.jar; ensure buildJar() produced the artifact before building the image."
-                    }
-
-                    if (!env.IMAGE_NAME) {
-                        error "IMAGE_NAME is not set; check version increment stage."
-                    }
-                    echo "env.IMAGE_NAME raw: '${env.IMAGE_NAME}'"
                     def imageName = "ada045/java-app:${env.IMAGE_NAME}"
-                    echo "Resolved Docker image name: ${imageName}"
-                    sh "docker build -t ${imageName} ."
+                    dockerImage imageName
                     dockerLogin()
                     dockerPush imageName
                 }
