@@ -159,7 +159,6 @@ jenkins-shared-library/
 |---|----------------------------|---------------|
 | 1 | **Increment Version**      | Maven's `build-helper` and `versions` plugins bump the patch version in `pom.xml`, and the new version is read into `env.IMAGE_NAME`. |
 | 2 | **Build JAR**               | The shared library's `buildJar()` function executes `mvn clean package` to generate the deployable JAR file. The `clean` phase removes artifacts from previous builds ensuring that each pipeline execution starts with a fresh workspace and produces a new JAR without reusing outdated build files. |
- |
 | 3 | **Build & Push Image**      | Shared library builds a Docker image tagged with the new version, logs in to Docker Hub using Jenkins Credentials, and pushes the image. |
 | 4 | **Deploy**                  | Placeholder stage (`script.groovy`) — reserved for a future deployment automation project. |
 | 5 | **Commit Version Update**   | The updated `pom.xml` is committed and pushed back to GitHub using a PAT, so the next pipeline run starts from the latest version. |
@@ -173,7 +172,7 @@ To avoid duplicating Maven and Docker commands across multiple pipelines, I extr
 The shared library follows the standard Jenkins Shared Library structure:
 
 - **`src/com/example/Docker.groovy`** — a Groovy class holding the actual implementation (`buildDockerImage`, `dockerLogin`, `dockerPush`), implementing `Serializable` so it works safely inside a pipeline's CPS execution model.
-- * **`vars/*.groovy`** – Contains lightweight wrapper scripts such as `buildImage.groovy`, `dockerLogin.groovy`, and `dockerPush.groovy`. These wrappers expose the methods defined in the `Docker` class as simple, reusable pipeline steps, allowing them to be invoked directly from the `Jenkinsfile`
+- **`vars/*.groovy`** – Contains lightweight wrapper scripts such as `buildImage.groovy`, `dockerLogin.groovy`, and `dockerPush.groovy`. These wrappers expose the methods defined in the `Docker` class as simple, reusable pipeline steps, allowing them to be invoked directly from the `Jenkinsfile`
 
 Example — `vars/dockerPush.groovy`:
 
@@ -260,8 +259,6 @@ Build 3: 1.13
 ```
 
 This approach guarantees continuous versioning, prevents duplicate Docker image tags, and ensures that each build produces a uniquely versioned application and Docker image.
-
-```
 
 ### 2. Authentication — Git push from Jenkins was failing
 
