@@ -8,7 +8,7 @@
 
 A production-style **CI/CD pipeline** that builds a Java (Maven) application, automatically versions it, packages it into a Docker image, and publishes it to Docker Hub — all orchestrated by a **reusable Jenkins Shared Library**.
 
-This project was built to demonstrate practical, real-world Jenkins pipeline engineering: not just "hello world" automation, but the kind of versioning, credential, and permission problems that actually show up in production environments — along with how they were diagnosed and fixed.
+While building this, I ran into real versioning, authentication, and permission issues that come up in production Jenkins setups. This README documents explains how the pipeline works and how each of those problems was diagnosed and fixed.
 
 ---
 
@@ -32,7 +32,7 @@ This project was built to demonstrate practical, real-world Jenkins pipeline eng
 
 ## 📌 Project Overview
 
-This repository contains a Java application whose build, versioning, containerization, and publishing process is fully automated through a **Jenkins declarative pipeline**. The pipeline logic itself doesn't live directly in the `Jenkinsfile` — instead, the reusable steps (building the JAR, building the Docker image, logging in and pushing to Docker Hub) are abstracted into a **Jenkins Shared Library**, so the same library can drive the pipeline for other Java/Docker projects with minimal changes.
+This repository contains a Java application whose build, versioning, containerization, and publishing process is fully automated through a **Jenkins declarative pipeline**. The pipeline logic itself doesn't live directly in the `Jenkinsfile` — instead, the reusable steps like building the JAR, building the Docker image, logging in and pushing to Docker Hub are abstracted into a **Jenkins Shared Library**, so the same library can drive the pipeline for other Java/Docker projects with minimal changes.
 
 Every successful pipeline run:
 
@@ -213,7 +213,7 @@ def call(String imageName) {
 }
 ```
 
-**Why this matters:** every function in the library accepts parameters (image name, credentials ID) instead of hardcoding project-specific values. That means the exact same library — and the exact same `Jenkinsfile` pattern — can drive the pipeline for a completely different Java/Docker project, just by changing what's passed in. This is a core DevOps principle: write automation once, reuse it everywhere.
+**Why this matters:** every function in the library takes parameters (image name, credentials ID) instead of hardcoding project-specific values. That means the same library, and the same `Jenkinsfile` pattern, can run the pipeline for a different Java/Docker project just by changing what's passed in.
 
 ---
 
@@ -239,7 +239,7 @@ my-image:1.11
 my-image:1.12
 ```
 
-**Why this design matters:** because the shared library only ever receives an already-composed image name as a string argument, it has zero knowledge of — and zero dependency on — any specific project. That's what makes it genuinely reusable: a second, third, or tenth Java project can plug into this same library, pass in its own image name, and get identical automated versioning and tagging behavior without touching a single line of library code.
+**Why this design matters:** the shared library only ever receives a ready-made image name as a string. It doesn't know or care which project it's building for. This means any other Java project can use the same library, pass in its own image name, and get the same versioning and tagging behavior without any changes to the library code.
 
 ---
 
@@ -297,7 +297,7 @@ docker exec -u 0 -it <container-id> bash
 chmod 666 /var/run/docker.sock
 ```
 
-This immediately resolved the issue because it gave the `jenkins` user read/write access to the Docker daemon's socket, letting the Jenkins process talk to the host's Docker engine.
+This fixed the issue because it gave the `jenkins` user read/write access to the Docker daemon's socket, so the Jenkins process could talk to the host's Docker engine.
 
 > ⚠️ **Production note:** `chmod 666` on the Docker socket is a quick fix, not a secure long-term solution — it grants any process on the host root-equivalent access to Docker. In a production environment, the safer approach is to add the `jenkins` user to the `docker` group (or run a rootless/sidecar Docker setup) so permissions are scoped properly rather than opened to everyone.
 
