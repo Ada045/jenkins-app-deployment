@@ -257,6 +257,9 @@ Build 2: 1.12
         ▼
 Build 3: 1.13
 ```
+<img width="1366" height="768" alt="Screenshot (27)" src="https://github.com/user-attachments/assets/04be43e3-e64d-435a-8547-6858def21262" />
+
+<img width="1366" height="768" alt="Screenshot (28)" src="https://github.com/user-attachments/assets/a2f7d411-3594-4bbf-abf4-196deecc8338" />
 
 This approach guarantees continuous versioning, prevents duplicate Docker image tags, and ensures that each build produces a uniquely versioned application and Docker image.
 
@@ -286,12 +289,15 @@ The token is never printed or hardcoded — it only ever exists as a masked envi
 
 **Problem:** Jenkins could not run `docker build` / `docker push` commands. The Jenkins process didn't have permission to access the Docker socket (`/var/run/docker.sock`) on the host, resulting in a permission-denied error.
 
+<img width="1366" height="768" alt="Screenshot (23)" src="https://github.com/user-attachments/assets/0d8ecfb5-8475-41af-8baf-e48520f65e72" />
+
 **Solution:** Entered the running Jenkins container as `root` and granted access to the socket:
 
 ```bash
 docker exec -u 0 -it <container-id> bash
 chmod 666 /var/run/docker.sock
 ```
+<img width="1366" height="768" alt="Screenshot (22)" src="https://github.com/user-attachments/assets/d05e108b-31d1-4bd4-9ebe-7dd11880a1ad" />
 
 This fixed the issue because it gave the `jenkins` user read/write access to the Docker daemon's socket, so the Jenkins process could talk to the host's Docker engine.
 
@@ -332,46 +338,6 @@ This fixed the issue because it gave the `jenkins` user read/write access to the
 3. **Create a Pipeline job** pointing at this repository's `Jenkinsfile`.
 4. **Run the pipeline** — it will build, version, containerize, and push automatically.
 
-### Running the app locally (without Jenkins)
 
-```bash
-mvn clean package
-docker build -t my-image:local .
-docker run -p 8081:8081 my-image:local
-```
-
----
-
-## 📸 Screenshots
-
-> _Add screenshots below to showcase the pipeline in action._
-
-**Jenkins Pipeline Overview**
-`![Pipeline Overview](./screenshots/pipeline-overview.png)`
-
-**Successful Build Stages**
-`![Build Stages](./screenshots/build-stages.png)`
-
-**Docker Hub Repository with Tagged Images**
-`![Docker Hub Tags](./screenshots/dockerhub-tags.png)`
-
-**GitHub Commit History (Automated Version Bumps)**
-`![Version Commits](./screenshots/version-commits.png)`
-
----
-
-## 🔮 Future Improvements
-
-- [ ] Implement the actual **deploy stage** (e.g., deploy to a remote server, Docker Swarm, or Kubernetes)
-- [ ] Add automated **unit/integration tests** as a pipeline stage before the build
-- [ ] Replace `chmod 666` on the Docker socket with `docker` group membership or rootless Docker
-- [ ] Add Slack/email notifications on pipeline success or failure
-- [ ] Introduce a `Jenkinsfile` parameter for choosing major/minor/patch version bumps
-- [ ] Add a vulnerability scan stage (e.g., Trivy) before pushing images to Docker Hub
-- [ ] Migrate secrets management to a dedicated vault (e.g., HashiCorp Vault) for larger-scale use
-
----
-
-## 📄 License
 
 This project is available under the MIT License.
