@@ -23,9 +23,6 @@ During the development of this pipeline, I encountered and resolved several real
 - [Dynamic Docker Image Tagging](#-dynamic-docker-image-tagging)
 - [Challenges & Solutions](#-challenges--solutions)
 - [Skills Demonstrated](#-skills-demonstrated)
-- [Getting Started](#-getting-started)
-- [Screenshots](#-screenshots)
-- [Future Improvements](#-future-improvements)
 
 ---
 
@@ -126,33 +123,6 @@ sequenceDiagram
 
 ---
 
-## 📁 Project Structure
-
-```
-.
-├── Jenkinsfile                 
-├── Dockerfile                   
-├── script.groovy               
-├── pom.xml                      
-├── src/                         
-│   └── main/java/...
-└── README.md
-
-jenkins-shared-library/
-├── src/
-│   └── com/example/
-│       └── Docker.groovy        
-└── vars/
-    ├── buildJar.groovy          
-    ├── buildImage.groovy        
-    ├── dockerLogin.groovy      
-    └── dockerPush.groovy        
-```
-
-> The Jenkins Shared Library is maintained in a separate GitHub repository and configured in Jenkins under **Manage Jenkins → Configure System → Global Pipeline Libraries** as `jenkins-shared-library`. It is imported into the pipeline using `@Library('jenkins-shared-library') _`, allowing the `Jenkinsfile` to reuse common functions such as building the JAR file and Docker image while keeping the pipeline clean, modular, and easy to maintain.
-
----
-
 ## ⚙️ CI/CD Pipeline Stages
 
 | # | Stage                     | What Happens |
@@ -167,7 +137,7 @@ jenkins-shared-library/
 
 ## 📚 Jenkins Shared Library
 
-To avoid duplicating Maven and Docker commands across multiple pipelines, I extracted the common build logic into a Jenkins Shared Library. This keeps the Jenkinsfile clean, concise, and focused on orchestrating the pipeline, while the implementation of the build and deployment tasks is centralized in a reusable library.
+To avoid duplicating Maven and Docker commands across multiple pipelines, I extracted the common build logic into a Jenkins Shared Library. This keeps the Jenkinsfile clean and focused on orchestrating the pipeline, while the implementation of the build and deployment tasks is centralized in a reusable library.
 
 The shared library follows the standard Jenkins Shared Library structure:
 
@@ -319,25 +289,4 @@ This fixed the issue because it gave the `jenkins` user read/write access to the
 
 ---
 
-## 🚦 Getting Started
-
-### Prerequisites
-
-- Jenkins with the Maven, Docker, and Git plugins
-- A Docker Hub account and access token
-- A GitHub Personal Access Token with `repo` scope
-- Docker installed on the Jenkins agent
-
-### Setup
-
-1. **Register the shared library** in Jenkins:
-   `Manage Jenkins → Configure System → Global Pipeline Libraries` → name it `jenkins-shared-library` and point it at its repository.
-2. **Add credentials** in Jenkins:
-   - `docker-credentials` → Docker Hub username/password
-   - `github-pat` → GitHub username + PAT
-3. **Create a Pipeline job** pointing at this repository's `Jenkinsfile`.
-4. **Run the pipeline** — it will build, version, containerize, and push automatically.
-
-
-
-This project is available under the MIT License.
+his project is available under the MIT License.
