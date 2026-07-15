@@ -273,8 +273,6 @@ chmod 666 /var/run/docker.sock
 
 This fixed the issue because it gave the `jenkins` user read/write access to the Docker daemon's socket, so the Jenkins process could talk to the host's Docker engine.
 
-> ⚠️ **Production note:** `chmod 666` on the Docker socket is a quick fix, not a secure long-term solution — it grants any process on the host root-equivalent access to Docker. In a production environment, the safer approach is to add the `jenkins` user to the `docker` group (or run a rootless/sidecar Docker setup) so permissions are scoped properly rather than opened to everyone.
-
 ---
 
 ## 🎯 Skills Demonstrated
