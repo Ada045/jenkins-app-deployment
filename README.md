@@ -9,7 +9,7 @@
 This project demonstrates a production-inspired **CI/CD pipeline** that automates the build, versioning, containerization, and deployment of a Java (Maven) application. The pipeline compiles the application into a JAR file, automatically increments its version, builds and tags a Docker image with the updated version, and publishes the image to Docker Hub. To promote reusability and maintainability, the core build and Docker operations are encapsulated within a **Jenkins Shared Library**.
 
 During the development of this pipeline, I encountered and resolved several real-world challenges commonly faced in production Jenkins environments, including application version management, GitHub authentication using a Personal Access Token (PAT), and Docker socket permission issues. This README explains the pipeline architecture, its implementation, and the solutions used to address each of these challenges.
----
+
 
 ## 📖 Table of Contents
 
