@@ -6,10 +6,9 @@
 [![Java](https://img.shields.io/badge/Java-17-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)](https://openjdk.org/)
 [![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/)
 
-A production-style **CI/CD pipeline** that builds a Java (Maven) application, automatically versions it, packages it into a Docker image, and publishes it to Docker Hub — all orchestrated by a **reusable Jenkins Shared Library**.
+This project demonstrates a production-inspired **CI/CD pipeline** that automates the build, versioning, containerization, and deployment of a Java (Maven) application. The pipeline compiles the application into a JAR file, automatically increments its version, builds and tags a Docker image with the updated version, and publishes the image to Docker Hub. To promote reusability and maintainability, the core build and Docker operations are encapsulated within a **Jenkins Shared Library**.
 
-While building this, I ran into real versioning, authentication, and permission issues that come up in production Jenkins setups. This README documents explains how the pipeline works and how each of those problems was diagnosed and fixed.
-
+During the development of this pipeline, I encountered and resolved several real-world challenges commonly faced in production Jenkins environments, including application version management, GitHub authentication using a Personal Access Token (PAT), and Docker socket permission issues. This README explains the pipeline architecture, its implementation, and the solutions used to address each of these challenges.
 ---
 
 ## 📖 Table of Contents
@@ -131,26 +130,26 @@ sequenceDiagram
 
 ```
 .
-├── Jenkinsfile                  # Declarative pipeline definition
-├── Dockerfile                   # Container image definition for the Java app
-├── script.groovy                # Placeholder deploy step (future project)
-├── pom.xml                      # Maven project descriptor
-├── src/                         # Java application source code
+├── Jenkinsfile                 
+├── Dockerfile                   
+├── script.groovy               
+├── pom.xml                      
+├── src/                         
 │   └── main/java/...
 └── README.md
 
 jenkins-shared-library/
 ├── src/
 │   └── com/example/
-│       └── Docker.groovy        # Core reusable Docker logic class
+│       └── Docker.groovy        
 └── vars/
-    ├── buildJar.groovy          # Wraps Maven build step
-    ├── buildImage.groovy        # Wraps Docker.buildDockerImage()
-    ├── dockerLogin.groovy       # Wraps Docker.dockerLogin()
-    └── dockerPush.groovy        # Wraps Docker.dockerPush()
+    ├── buildJar.groovy          
+    ├── buildImage.groovy        
+    ├── dockerLogin.groovy      
+    └── dockerPush.groovy        
 ```
 
-> The shared library lives in its own repository, registered in Jenkins under **Manage Jenkins → Configure System → Global Pipeline Libraries** as `jenkins-shared-library`, and is imported into the `Jenkinsfile` with `@Library('jenkins-shared-library') _`.
+> The Jenkins Shared Library is maintained in a separate GitHub repository and configured in Jenkins under **Manage Jenkins → Configure System → Global Pipeline Libraries** as `jenkins-shared-library`. It is imported into the pipeline using `@Library('jenkins-shared-library') _`, allowing the `Jenkinsfile` to reuse common functions such as building the JAR file and Docker image while keeping the pipeline clean, modular, and easy to maintain.
 
 ---
 
@@ -159,49 +158,22 @@ jenkins-shared-library/
 | # | Stage                     | What Happens |
 |---|----------------------------|---------------|
 | 1 | **Increment Version**      | Maven's `build-helper` and `versions` plugins bump the patch version in `pom.xml`, and the new version is read into `env.IMAGE_NAME`. |
-| 2 | **Build JAR**               | Shared library's `buildJar()` runs `mvn package` (skipping tests) to produce the deployable JAR. |
+| 2 | **Build JAR**               | The shared library's `buildJar()` function executes `mvn clean package` to generate the deployable JAR file. The `clean` phase removes artifacts from previous builds ensuring that each pipeline execution starts with a fresh workspace and produces a new JAR without reusing outdated build files.
+ |
 | 3 | **Build & Push Image**      | Shared library builds a Docker image tagged with the new version, logs in to Docker Hub using Jenkins Credentials, and pushes the image. |
 | 4 | **Deploy**                  | Placeholder stage (`script.groovy`) — reserved for a future deployment automation project. |
 | 5 | **Commit Version Update**   | The updated `pom.xml` is committed and pushed back to GitHub using a PAT, so the next pipeline run starts from the latest version. |
-
-**Pipeline snippet:**
-
-```groovy
-@Library('jenkins-shared-library') _
-pipeline {
-    agent any
-    tools { maven 'maven' }
-    stages {
-        stage("increment version") { ... }
-        stage("build jar") {
-            steps { script { buildJar() } }
-        }
-        stage("build and push image") {
-            steps {
-                script {
-                    def imageName = "ada045/java-app:${env.IMAGE_NAME}"
-                    buildImage imageName
-                    dockerLogin()
-                    dockerPush imageName
-                }
-            }
-        }
-        stage("deploy") { ... }
-        stage("commit version update") { ... }
-    }
-}
-```
 
 ---
 
 ## 📚 Jenkins Shared Library
 
-Rather than repeating Maven and Docker logic inline in every `Jenkinsfile`, the reusable pieces were extracted into a **Jenkins Shared Library**. This keeps the `Jenkinsfile` itself short and declarative, while the "how" of building and pushing lives in one place.
+To avoid duplicating Maven and Docker commands across multiple pipelines, I extracted the common build logic into a Jenkins Shared Library. This keeps the Jenkinsfile clean, concise, and focused on orchestrating the pipeline, while the implementation of the build and deployment tasks is centralized in a reusable library.
 
-The library follows the standard Jenkins Shared Library layout:
+The shared library follows the standard Jenkins Shared Library structure:
 
 - **`src/com/example/Docker.groovy`** — a Groovy class holding the actual implementation (`buildDockerImage`, `dockerLogin`, `dockerPush`), implementing `Serializable` so it works safely inside a pipeline's CPS execution model.
-- **`vars/*.groovy`** — thin global-variable wrappers (`buildImage.groovy`, `dockerLogin.groovy`, `dockerPush.groovy`) that expose the class methods as simple, callable pipeline steps like `dockerPush(imageName)`.
+- * **`vars/*.groovy`** – Contains lightweight wrapper scripts such as `buildImage.groovy`, `dockerLogin.groovy`, and `dockerPush.groovy`. These wrappers expose the methods defined in the `Docker` class as simple, reusable pipeline steps, allowing them to be invoked directly from the `Jenkinsfile`
 
 Example — `vars/dockerPush.groovy`:
 
@@ -219,26 +191,30 @@ def call(String imageName) {
 
 ## 🏷 Dynamic Docker Image Tagging
 
-The Docker image name is **not hardcoded inside the shared library**. Instead:
+### Dynamic Docker Image Tagging
 
-1. The image name (e.g. `ada045/java-app`) is defined in the `Jenkinsfile`, at the project level.
-2. It's combined with the automatically incremented application version to form the full tag, e.g. `ada045/java-app:1.11`.
-3. That fully-formed tag is passed as a **parameter** into the shared library's functions (`buildImage`, `dockerPush`) — the library never needs to know what the image is actually called.
+The Docker image name is **not hardcoded** within the Jenkins Shared Library. Instead, it is defined in the `Jenkinsfile`, allowing the shared library to remain reusable across different projects.
+
+The process works as follows:
+
+1. The base Docker image name (for example, `ada045/java-app`) is defined in the `Jenkinsfile`.
+2. During the pipeline execution, the automatically incremented application version is appended to the image name to generate a versioned Docker image tag, such as `ada045/java-app:1.11`.
+3. The complete image name, including the version tag, is then passed as a parameter to the shared library functions (such as `buildImage` and `dockerPush`), allowing the library to build and push the correct image without containing any project-specific information.
 
 ```groovy
 def imageName = "ada045/java-app:${env.IMAGE_NAME}"
+
 buildImage imageName
 dockerPush imageName
 ```
 
-Resulting tags over successive builds:
+As the application version is incremented on each successful pipeline execution, the Docker image is automatically tagged with the corresponding version:
 
+```text
+ada045/java-app:1.10
+ada045/java-app:1.11
+ada045/java-app:1.12
 ```
-my-image:1.10
-my-image:1.11
-my-image:1.12
-```
-
 **Why this design matters:** the shared library only ever receives a ready-made image name as a string. It doesn't know or care which project it's building for. This means any other Java project can use the same library, pass in its own image name, and get the same versioning and tagging behavior without any changes to the library code.
 
 ---
@@ -247,35 +223,58 @@ my-image:1.12
 
 ### 1. Versioning — every build produced the same Docker tag
 
-**Problem:** Initially, the version bump only happened inside the workspace and was never persisted anywhere. Every pipeline run started from the *same* `pom.xml` version, so every build incremented from the same baseline instead of the previous build's result:
+**Problem:** Initially, the version increment was only applied within the Jenkins workspace and was not persisted back to the source repository. As a result, each pipeline execution started from the same version defined in the `pom.xml` file. This caused every build to generate the same incremented version instead of continuing from the version produced by the previous successful build.
 
-```
-1.10 → 1.11   (build 1)
-1.10 → 1.11   (build 2 — should have been 1.12!)
+```text
+Initial version: 1.10
+
+Build 1:
+1.10 → 1.11
+
+Build 2:
+1.10 → 1.11   ❌ Expected: 1.12
 ```
 
-**Solution:** After building and pushing the image, the pipeline now commits the updated `pom.xml` back to GitHub and pushes it. This means each new build clones a repo that already reflects the previous build's version, so versions increment correctly and continuously:
+Since the updated version was never committed back to GitHub, subsequent pipeline executions always read the original version from the repository, resulting in duplicate Docker image tags and inconsistent versioning.
 
+**Solution:** To resolve this issue, the pipeline was enhanced to automatically commit the updated `pom.xml` file back to GitHub after successfully building and pushing the Docker image. This ensures that the latest application version is persisted in the repository before the pipeline completes.
+
+As a result, every subsequent pipeline execution clones the most recent version of the repository, allowing the application version to continue incrementing from the previous successful build rather than restarting from the original version.
+
+```text
+Initial version: 1.10
+        │
+        ▼
+Build 1: 1.11
+        │
+        ├── Commit & Push updated pom.xml
+        ▼
+Next pipeline clones the latest repository
+        │
+        ▼
+Build 2: 1.12
+        │
+        ├── Commit & Push updated pom.xml
+        ▼
+Build 3: 1.13
 ```
-1.10
-  ↓
-1.11 → commit & push
-  ↓
-(next build clones latest)
-  ↓
-1.12
-  ↓
-1.13 → commit & push
+
+This approach guarantees continuous versioning, prevents duplicate Docker image tags, and ensures that each build produces a uniquely versioned application and Docker image.
+
 ```
 
 ### 2. Authentication — Git push from Jenkins was failing
 
-**Problem:** Plain GitHub username/password authentication doesn't work for automated Git operations (GitHub disabled password auth for Git over HTTPS).
+**Problem:** During implementation, I encountered an authentication issue when attempting to push changes back to GitHub from the Jenkins pipeline. GitHub no longer supports username and password authentication for Git operations over HTTPS, so the pipeline was unable to authenticate using standard credentials.
 
 **Solution:**
-- Generated a **GitHub Personal Access Token (PAT)**.
-- Stored it securely as a `usernamePassword` credential in **Jenkins Credentials**.
-- Injected it at pipeline runtime with `withCredentials`, and used it to rewrite the remote URL for authenticated push:
+
+To securely authenticate the pipeline, I:
+
+Generated a GitHub Personal Access Token (PAT) with the required repository permissions.
+Stored the PAT securely in Jenkins Credentials as a usernamePassword credential.
+Used Jenkins' withCredentials step to inject the credentials into the pipeline at runtime.
+Updated the Git remote URL to use the injected credentials before pushing the changes back to the repository.
 
 ```groovy
 withCredentials([usernamePassword(credentialsId: 'github-pat', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
