@@ -288,5 +288,3 @@ This fixed the issue because it gave the `jenkins` user read/write access to the
 | **Troubleshooting** | Diagnosing and resolving real pipeline failures (permissions, auth, versioning) |
 
 ---
-
-his project is available under the MIT License.
