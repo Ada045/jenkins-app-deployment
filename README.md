@@ -39,7 +39,9 @@ Every successful pipeline run:
 5. Pushes the image to Docker Hub
 6. Commits and pushes the version bump back to GitHub — so the *next* build starts from a clean, incremented baseline
 
-> **Note:** The `deploy` stage is currently a placeholder (`script.groovy`). Actual deployment automation (e.g., to a server or Kubernetes) is being built as a separate, follow-up project.
+<img width="1366" height="768" alt="Screenshot (29)" src="https://github.com/user-attachments/assets/f093654e-d500-4a3c-9b6e-3bc2437fab2f" />
+
+> **Note:** The `deploy` stage is currently implemented as a placeholder (`script.groovy`). The next phase of this project is to automate deployment to **AWS**, where the Docker image will be pulled from Docker Hub and deployed to the target environment.
 
 ---
 
