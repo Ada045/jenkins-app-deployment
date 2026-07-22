@@ -41,7 +41,7 @@ pipeline{
                 script {
                     def imageName = "ada045/java-app:${env.IMAGE_NAME}"
                     def gvLocal = load 'script.groovy'
-                    gvLocal.deploy imageName
+                    gvLocal.deploy(imageName)
                 }
             }
         }
