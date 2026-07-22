@@ -40,7 +40,7 @@ pipeline{
             steps {
                 script {
                     def gvLocal = load 'script.groovy'
-                    gvLocal.deploy()
+                    gvLocal.deploy ada045/java-app:${env.IMAGE_NAME}
                 }
             }
         }
