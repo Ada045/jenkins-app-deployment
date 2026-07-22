@@ -38,7 +38,7 @@ pipeline{
         stage("deploy") {
             steps {
                 script {
-                    deploy '63.177.99.170', 'ec2-server-key', "ada045/java-app:${env.IMAGE_NAME}", 'java-app', '8081'
+                    deploy '63.177.99.170', 'ec2-server-key', "ada045/java-app:${env.IMAGE_NAME}", 'java-app', '8081', '8080'
                 }
             }
         }
