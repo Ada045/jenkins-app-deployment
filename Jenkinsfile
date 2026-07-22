@@ -15,7 +15,6 @@ pipeline{
                     def matcher = readFile('pom.xml') =~ '<version>(.+)</version>'
                     def version = matcher[0][1]
                     env.IMAGE_NAME = "$version"
-
                 }
             }
         }
@@ -39,9 +38,7 @@ pipeline{
         stage("deploy") {
             steps {
                 script {
-                    def imageName = "ada045/java-app:${env.IMAGE_NAME}"
-                    def gvLocal = load 'script.groovy'
-                    gvLocal.deploy(imageName)
+                    deploy '63.177.99.170', 'ec2-server-key', "ada045/java-app:${env.IMAGE_NAME}", 'java-app', '8081'
                 }
             }
         }
